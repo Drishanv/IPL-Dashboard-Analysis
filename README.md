@@ -28,21 +28,21 @@ Turn raw IPL match and ball-by-ball data into **actionable insights**:
 
 ## 📊 Dashboard Pages (screenshots)
 **Overview**  
-![Overview](dashboards/screenshots/01_overview.png)
+![Overview](/dashboard/01_overview.png)
 
 **Batting**  
-![Batting](dashboards/screenshots/02_batting.png)
+![Batting](dashboard/02_batting.png)
 
 **Bowling**  
-![Bowling](dashboards/screenshots/03_bowling.png)
+![Bowling](dashboard/03_bowling.png)
 
 **Fielding & Toss**  
-![Fielding & Toss](dashboards/screenshots/04_fielding_toss.png)
+![Fielding & Toss](dashboard/04_fielding_toss.png)
 
 **Venue Insights**  
-![Venue Insights](dashboards/screenshots/05_venue_insights.png)
+![Venue Insights](dashboard/05_venue_insights.png)
 
-## 🔢 Key DAX (full library in [`dax/DAX_measures.md`](dax/DAX_measures.md))
+## 🔢 Key DAX (full library in (`dax/dax-measures)
 - KPI totals (matches, runs, 4s, 6s)
 - Batting: runs, balls faced, strike rate, fours/sixes
 - Bowling: wickets, overs, economy, maidens; powerplay/death phase metrics
