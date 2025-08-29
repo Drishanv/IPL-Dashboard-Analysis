@@ -1,5 +1,21 @@
-MIT License
 
-Copyright (c) 2025
+---
 
-Permission is hereby granted...
+## 📚 `dax/DAX_measures.md`
+
+```markdown
+# DAX Measures Library
+
+> Replace table/column names if your model differs (e.g., `Deliveries` ↔ your deliveries table).
+
+## KPI Totals
+```DAX
+Matches Total = COUNTROWS(Matches)
+
+Runs Total = SUM(Deliveries[total_runs])
+
+Fours Total =
+CALCULATE ( COUNTROWS ( Deliveries ), Deliveries[batsman_runs] = 4 )
+
+Sixes Total =
+CALCULATE ( COUNTROWS ( Deliveries ), Deliveries[batsman_runs] = 6 )
