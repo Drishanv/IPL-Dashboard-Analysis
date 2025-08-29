@@ -1,0 +1,163 @@
+1. Core counting and filters
+
+Matches Total = COUNTROWS(Matches)
+
+Runs Total = SUM(Deliveries[total_runs])
+
+Fours Total = CALCULATE(COUNTROWS(Deliveries), Deliveries[batsman_runs] = 4)
+
+Sixes Total = CALCULATE(COUNTROWS(Deliveries), Deliveries[batsman_runs] = 6)
+
+2. Batting (by Player / Team / Season)
+
+Runs by Player = SUM(Deliveries[batsman_runs])
+
+Balls Faced =
+VAR LegalBall =
+    NOT( Deliveries[wide_runs] > 0 || Deliveries[noball_runs] > 0 )
+RETURN
+SUMX(Deliveries, IF(LegalBall, 1, 0))
+
+Strike Rate =
+DIVIDE( [Runs by Player] * 100.0, [Balls Faced] )
+
+Fours by Player =
+CALCULATE( COUNTROWS(Deliveries), Deliveries[batsman_runs] = 4 )
+
+Sixes by Player =
+CALCULATE( COUNTROWS(Deliveries), Deliveries[batsman_runs] = 6 )
+
+Runs by Team = SUM(Deliveries[total_runs])
+
+Fours by Team =
+CALCULATE( COUNTROWS(Deliveries), Deliveries[batsman_runs] = 4, ALLEXCEPT(Deliveries, Deliveries[batting_team]) )
+
+Sixes by Team =
+CALCULATE( COUNTROWS(Deliveries), Deliveries[batsman_runs] = 6, ALLEXCEPT(Deliveries, Deliveries[batting_team]) )
+
+3. Bowling (wickets, economy, maidens)
+
+Wickets (Bowler) =
+CALCULATE(
+    COUNTROWS(Deliveries),
+    NOT(ISBLANK(Deliveries[player_dismissed])),
+    NOT(Deliveries[dismissal_kind] IN {"run out","retired hurt","obstructing the field"})
+)
+
+Runs Conceded (Bowler) =
+SUM(Deliveries[total_runs])  // includes all runs off the ball
+
+Balls Bowled (Legal) =
+SUMX(
+    Deliveries,
+    IF( Deliveries[wide_runs] > 0 || Deliveries[noball_runs] > 0, 0, 1 )
+)
+
+Overs (Bowler) = DIVIDE([Balls Bowled (Legal)], 6, 0)
+
+Economy Rate = DIVIDE( [Runs Conceded (Bowler)], [Overs (Bowler)], 0 )
+
+4. Maiden overs
+
+Maiden Overs =
+VAR OverLevel =
+    SUMMARIZE(
+        Deliveries,
+        Deliveries[match_id], Deliveries[bowler], Deliveries[inning], Deliveries[over],
+        "RunsInOver", SUM(Deliveries[total_runs]),
+        "WidesInOver", SUM(Deliveries[wide_runs]),
+        "NoBallsInOver", SUM(Deliveries[noball_runs])
+    )
+RETURN
+COUNTROWS( FILTER( OverLevel, [RunsInOver] = 0 && [WidesInOver] = 0 && [NoBallsInOver] = 0 ) )
+
+5. Top 5 bowlers
+
+Top 5 Bowlers =
+TOPN(
+    5,
+    SUMMARIZE(
+        VALUES(Deliveries[bowler]),
+        Deliveries[bowler],
+        "Wkts", [Wickets (Bowler)],
+        "Overs", [Overs (Bowler)],
+        "Econ", [Economy Rate],
+        "Maidens", [Maiden Overs]
+    ),
+    [Wkts], DESC, [Econ], ASC
+)
+
+6. Zero wicket bowlers
+
+Bowlers Zero Wickets =
+CALCULATE(
+    DISTINCTCOUNT(Deliveries[bowler]),
+    FILTER(
+        VALUES(Deliveries[bowler]),
+        CALCULATE([Wickets (Bowler)]) = 0
+    )
+)
+
+7. Fielding (catches + run-outs)
+Catches by Fielder =
+CALCULATE(
+    COUNTROWS(Deliveries),
+    Deliveries[dismissal_kind] = "caught"
+)
+
+Runouts by Fielder =
+CALCULATE(
+    COUNTROWS(Deliveries),
+    Deliveries[dismissal_kind] = "run out"
+)
+
+Dismissals by Fielder = [Catches by Fielder] + [Runouts by Fielder]
+
+8. Toss & Match outcomes (overall + team-wise)
+
+Tosses Won (Team) =
+CALCULATE( COUNTROWS(Matches), ALLEXCEPT(Matches, Matches[toss_winner]) )
+
+Match Wins (Team) =
+CALCULATE( COUNTROWS(Matches), ALLEXCEPT(Matches, Matches[winner]) )
+
+Wins After Winning Toss (Team) =
+CALCULATE(
+    COUNTROWS(Matches),
+    FILTER(Matches, Matches[winner] = Matches[toss_winner])
+)
+
+Win % After Toss (Team) =
+DIVIDE( [Wins After Winning Toss (Team)], [Tosses Won (Team)], 0 )
+
+9. Decision after winning toss (overall/team-wise):
+
+Toss: Chose Bat =
+CALCULATE( COUNTROWS(Matches), Matches[toss_decision] = "bat" )
+
+Toss: Chose Field =
+CALCULATE( COUNTROWS(Matches), Matches[toss_decision] = "field" )
+
+10. Team success & venues (most successful teams, lucky stadium)
+
+Team Wins =
+CALCULATE( COUNTROWS(Matches), ALLEXCEPT(Matches, Matches[winner]) )
+
+Wins at Venue (Selected Team) =
+VAR TeamSel = SELECTEDVALUE(Matches[winner])
+RETURN
+CALCULATE( COUNTROWS(Matches), Matches[winner] = TeamSel, ALLEXCEPT(Matches, Matches[venue]) )
+
+Matches at Venue (Selected Team) =
+VAR TeamSel = SELECTEDVALUE(Matches[winner])
+RETURN
+CALCULATE(
+    COUNTROWS(Matches),
+    (Matches[team1] = TeamSel || Matches[team2] = TeamSel),
+    ALLEXCEPT(Matches, Matches[venue])
+)
+
+Win % at Venue (Selected Team) =
+DIVIDE( [Wins at Venue (Selected Team)], [Matches at Venue (Selected Team)], 0 )
+
+
